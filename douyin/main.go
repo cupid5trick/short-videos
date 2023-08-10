@@ -15,7 +15,6 @@ func main() {
 		panic(err)
 	}
 	// 程序退出关闭数据库连接
-	defer dao.Close()
 
 	// SetMaxIdleConns sets the maximum number of connections in the idle connection pool.
 	sqlDB.SetMaxIdleConns(10)

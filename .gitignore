@@ -90,6 +90,6 @@ fabric.properties
 
 build/
 videos/
-conf/
+build/conf/
 douyin/dao/cos.go
 resources/application.yaml

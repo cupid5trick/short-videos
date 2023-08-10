@@ -3,7 +3,7 @@ package dao
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v2"
 	"gorm.io/driver/mysql"
@@ -13,7 +13,7 @@ import (
 var Db *gorm.DB
 
 // 配置参数映射结构体
-type conf struct {
+type Conf struct {
 	Url      string `yaml:"url"`
 	UserName string `yaml:"username"`
 	PassWord string `yaml:"password"`
@@ -22,9 +22,9 @@ type conf struct {
 }
 
 // 获取配置参数数据
-func (c *conf) getConf() *conf {
+func (c *Conf) getConf() *Conf {
 	// 读取resources/application.yaml文件
-	yamlFile, err := ioutil.ReadFile("conf/application.yaml")
+	yamlFile, err := os.ReadFile("conf/application.yaml")
 	// 若出现错误，打印错误提示
 	if err != nil {
 		fmt.Println(err.Error())
@@ -39,7 +39,7 @@ func (c *conf) getConf() *conf {
 
 // InitMySql 初始化连接数据库
 func InitMySql() (*sql.DB, error) {
-	var c conf
+	var c Conf
 	// 获取yaml配置参数
 	conf := c.getConf()
 	// 将yaml配置参数拼接成连接数据库的url
@@ -51,7 +51,8 @@ func InitMySql() (*sql.DB, error) {
 		conf.DbName,
 	)
 	// 连接数据库
-	Db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	Db = db
 	if err != nil {
 		panic(err)
 	}
