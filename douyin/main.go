@@ -3,14 +3,16 @@ package main
 import (
 	"time"
 
+	"douyin/douyin/common"
 	"douyin/douyin/dao"
 	"douyin/douyin/model"
 	"douyin/douyin/routes"
 )
 
 func main() {
+	common.LoadConfig()
 	// 连接数据库
-	sqlDB, err := dao.InitMySql()
+	sqlDB, err := dao.InitMySql(common.APPConfig)
 	if err != nil {
 		panic(err)
 	}

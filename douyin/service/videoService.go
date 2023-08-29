@@ -16,6 +16,7 @@ import (
 )
 
 const videoNum = 2 // feed每次返回的视频数量
+
 // FeedGet 获得视频列表
 func FeedGet(lastTime int64) ([]model.Video, error) {
 	// t := time.Now()
@@ -69,24 +70,6 @@ func GetVideoList(userId uint) []model.Video {
 	dao.Db.Table("videos").Where("author_id=?", userId).Find(&videoList)
 	return videoList
 }
-
-// // CosUpload 上传至云端，返回url
-// func CosUpload(fileName string, reader io.Reader) (string, error) {
-//	u, _ := url.Parse(fmt.Sprintf(dao.COS_URL_FORMAT, dao.COS_BUCKET_NAME, dao.COS_APP_ID, dao.COS_REGION))
-//	b := &cos.BaseURL{BucketURL: u}
-//	client := cos.NewClient(b, &http.Client{
-//		Transport: &cos.AuthorizationTransport{
-//			SecretID:  dao.COS_SECRET_ID,
-//			SecretKey: dao.COS_SECRET_KEY,
-//		},
-//	})
-//	//path为本地的保存路径
-//	_, err := client.Object.Put(context.Background(), fileName, reader, nil)
-//	if err != nil {
-//		panic(err)
-//	}
-//	return "https://dong-1305843950.cos.ap-nanjing.myqcloud.com/" + fileName, nil
-// }
 
 // ExampleReadFrameAsJpeg 获取封面
 func ExampleReadFrameAsJpeg(inFileName string, frameNum int) io.Reader {

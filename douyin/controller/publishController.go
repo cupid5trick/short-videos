@@ -3,6 +3,8 @@ package controller
 import (
 	"fmt"
 	"image/jpeg"
+	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +19,12 @@ import (
 	"douyin/douyin/service"
 )
 
+var (
+	imageRoot = "media/img/"
+	videoRoot = "media/video"
+	mediaURI  = "http://60.204.184.250:8001/"
+)
+
 type ReturnAuthor struct {
 	AuthorId      uint   `json:"author_id"`
 	Name          string `json:"name"`
@@ -24,6 +32,7 @@ type ReturnAuthor struct {
 	FollowerCount uint   `json:"follower_count"`
 	IsFollow      bool   `json:"is_follow"`
 }
+
 type ReturnMyself struct {
 	AuthorId      uint   `json:"author_id"`
 	Name          string `json:"name"`
@@ -62,92 +71,91 @@ type VideoListResponse2 struct {
 }
 
 func Publish(c *gin.Context) { // 上传视频方法
+	var err error
 	// 1.中间件验证token后，获取userId
 	getUserId, _ := c.Get("user_id")
 	var userId uint
 	if v, ok := getUserId.(uint); ok {
 		userId = v
 	}
+
 	// 2.接收请求参数信息
 	title := c.PostForm("title")
 	data, err := c.FormFile("data")
 	if err != nil {
-		c.JSON(http.StatusOK, common.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
+		_ = c.Error(err)
 	}
-
-	// 3.返回至前端页面的展示信息
-	fileName := filepath.Base(data.Filename)
-	finalName := fmt.Sprintf("%d_%s", userId, fileName)
-	// 先存储到本地文件夹，再保存到云端，获取封面后最后删除
-	videoPath := "media/video"
-	saveFile := filepath.Join(videoPath, finalName)
-	if err := c.SaveUploadedFile(data, saveFile); err != nil {
-		c.JSON(http.StatusOK, common.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-	// 从本地上传到云端，并获取云端地址
-	_, err = data.Open()
-
-	// playUrl, err := service.CosUpload(finalName, f)
-	playUrl := filepath.Join("/"+videoPath, finalName)
-	if err != nil {
-		c.JSON(http.StatusOK, common.Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
-		return
-	}
-	c.JSON(http.StatusOK, common.Response{
-		StatusCode: 0,
-		StatusMsg:  finalName + "--uploaded successfully",
-	})
-
-	// 直接传至云端，不用存储到本地
-	coverName := strings.Replace(finalName, ".mp4", ".jpeg", 1)
-	img := service.ExampleReadFrameAsJpeg(saveFile, 3) // 获取第3帧封面
-	imgPath := "media/img/"
-	saveImage := filepath.Join(imgPath, coverName)
-
-	img2, _ := jpeg.Decode(img)     // 保存到本地时要用到
-	imgw, _ := os.Create(saveImage) // 先创建，后写入
-	jpeg.Encode(imgw, img2, &jpeg.Options{100})
-	coverUrl := filepath.Join("/"+imgPath, coverName)
-	// coverUrl, err := service.CosUpload(coverName, img)
-	// if err != nil {
-	//	c.JSON(http.StatusOK, common.Response{
-	//		StatusCode: 1,
-	//		StatusMsg:  err.Error(),
-	//	})
-	//	return
-	// }
-
-	// 删除保存在本地中的视频
-	// err = os.Remove(saveFile) // ignore_security_alert
-	// if err != nil {
-	//	logging.Info(err)
-	// }
-
+	log.Printf("Received media (%s:%s) from uid:%s", title, data.Filename, userId)
 	// 4.保存发布信息至数据库,刚开始发布，喜爱和评论默认为0
 	video := model.Video{
 		Model:         gorm.Model{},
 		AuthorId:      userId,
-		PlayUrl:       playUrl,
-		CoverUrl:      coverUrl,
+		PlayUrl:       "",
+		CoverUrl:      "",
 		FavoriteCount: 0,
 		CommentCount:  0,
 		Title:         title,
 	}
+	err = publishToLocal0(data, &video, c.SaveUploadedFile)
+	if err != nil {
+		_ = c.Error(err)
+	}
+	log.Printf("play_url: %s, cover_url: %s", video.PlayUrl, video.CoverUrl)
 	service.CreateVideo(&video)
+	c.JSON(http.StatusOK, common.Response{
+		StatusCode: 0,
+		StatusMsg:  video.Title + "published successfully at" + video.PlayUrl,
+	})
 }
 
-func PublishList(c *gin.Context) { // 获取列表的方法
+// 在本地调用 ffmpeg 获取第 3 帧作为封面
+func publishToLocal0(data *multipart.FileHeader, video *model.Video, save func(*multipart.FileHeader, string) error) error {
+	var err error
+	// 先存储到本地文件夹, 文件名可能含有非法字符
+	fileName := (filepath.Base(data.Filename))
+	ext := filepath.Ext(data.Filename)
+	userId := video.AuthorId
+	finalName := fmt.Sprintf("%d_%s", userId, fileName)
+	saveFile := filepath.Join(videoRoot, finalName)
+
+	err = save(data, saveFile)
+	if err != nil {
+		return err
+	}
+	playUrl := filepath.Join(mediaURI+videoRoot, finalName)
+	log.Printf("Saved video (%s:%s) to %s, accessiable at %s", video.Title, data.Filename, saveFile, playUrl)
+
+	if err != nil {
+		return err
+	}
+
+	// 存储封面图片到本地
+	coverName := strings.Replace(finalName, ext, ".jpeg", 1)
+	img := service.ExampleReadFrameAsJpeg(saveFile, 3) // 获取第3帧封面
+	saveImage := filepath.Join(imageRoot, coverName)
+
+	img2, _ := jpeg.Decode(img)     // 保存到本地时要用到
+	imgw, _ := os.Create(saveImage) // 先创建，后写入
+	err = jpeg.Encode(imgw, img2, &jpeg.Options{Quality: 100})
+	if err != nil {
+		return err
+	}
+	coverUrl := filepath.Join(mediaURI+imageRoot, coverName)
+	log.Printf("Extracted cover for video (%s:%s) to %s, accessiable at %s", video.Title, data.Filename, saveImage, coverUrl)
+
+	// 保存完成后记录下播放地址和封面地址
+	video.CoverUrl = coverUrl
+	video.PlayUrl = playUrl
+
+	return nil
+}
+
+// func publishToLocal1(data *multipart.FileHeader, video *model.Video, save func(*multipart.FileHeader, string) error) error {
+//
+// }
+
+// PublishList 获取列表的方法
+func PublishList(c *gin.Context) {
 	// 1.中间件鉴权token
 	getHostId, _ := c.Get("user_id")
 	var HostId uint
@@ -230,8 +238,8 @@ func PublishList(c *gin.Context) { // 获取列表的方法
 			FollowerCount: getUser.FollowerCount,
 			IsFollow:      service.IsFollowing(HostId, GuestId),
 		}
-		// 根据用户id查找 所有相关视频信息
 
+		// 根据用户id查找 所有相关视频信息
 		videoList := service.GetVideoList(GuestId)
 		if len(videoList) == 0 {
 			c.JSON(http.StatusOK, VideoListResponse{

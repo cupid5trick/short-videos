@@ -13,7 +13,7 @@ import (
 var Key = []byte("byte dance 11111 return")
 
 type MyClaims struct {
-	UserId   uint   `json:"uid"`
+	UserId   uint   `json:"user_id"`
 	UserName string `json:"username"`
 	jwt.StandardClaims
 }
