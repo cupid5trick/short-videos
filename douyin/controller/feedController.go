@@ -4,7 +4,9 @@ import (
 	"douyin/douyin/common"
 	"douyin/douyin/middleware"
 	"douyin/douyin/service"
+	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -106,6 +108,9 @@ func Feed(c *gin.Context) {
 		feedVideoList = append(feedVideoList, tmp)
 		newTime = x.CreatedAt.Unix()
 	}
+	bytes, _ := json.Marshal(feedVideoList)
+
+	log.Printf("Returned video list: %s", string(bytes))
 	if len(feedVideoList) > 0 {
 		c.JSON(http.StatusOK, FeedResponse{
 			Response:  common.Response{StatusCode: 0}, //成功

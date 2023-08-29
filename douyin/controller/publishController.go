@@ -19,12 +19,6 @@ import (
 	"douyin/douyin/service"
 )
 
-var (
-	imageRoot = "media/img/"
-	videoRoot = "media/video"
-	mediaURI  = "http://60.204.184.250:8001/"
-)
-
 type ReturnAuthor struct {
 	AuthorId      uint   `json:"author_id"`
 	Name          string `json:"name"`
@@ -112,6 +106,9 @@ func Publish(c *gin.Context) { // 上传视频方法
 func publishToLocal0(data *multipart.FileHeader, video *model.Video, save func(*multipart.FileHeader, string) error) error {
 	var err error
 	// 先存储到本地文件夹, 文件名可能含有非法字符
+	videoRoot := common.APPConfig.Fs.VideoRoot
+	imageRoot := common.APPConfig.Fs.ImageRoot
+	MediaURI := common.APPConfig.Fs.URI
 	fileName := (filepath.Base(data.Filename))
 	ext := filepath.Ext(data.Filename)
 	userId := video.AuthorId
@@ -122,7 +119,7 @@ func publishToLocal0(data *multipart.FileHeader, video *model.Video, save func(*
 	if err != nil {
 		return err
 	}
-	playUrl := filepath.Join(mediaURI+videoRoot, finalName)
+	playUrl := filepath.Join(MediaURI+videoRoot, finalName)
 	log.Printf("Saved video (%s:%s) to %s, accessiable at %s", video.Title, data.Filename, saveFile, playUrl)
 
 	if err != nil {
@@ -140,7 +137,7 @@ func publishToLocal0(data *multipart.FileHeader, video *model.Video, save func(*
 	if err != nil {
 		return err
 	}
-	coverUrl := filepath.Join(mediaURI+imageRoot, coverName)
+	coverUrl := filepath.Join(MediaURI+imageRoot, coverName)
 	log.Printf("Extracted cover for video (%s:%s) to %s, accessiable at %s", video.Title, data.Filename, saveImage, coverUrl)
 
 	// 保存完成后记录下播放地址和封面地址

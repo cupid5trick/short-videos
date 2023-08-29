@@ -29,8 +29,10 @@ type Mysql struct {
 }
 
 type Fs struct {
-	Type string
-	URI  string `yaml:"uri"`
+	Type      string
+	URI       string `yaml:"uri"`
+	ImageRoot string `yaml:"image-root"`
+	VideoRoot string `yaml:"video-root"`
 }
 
 // LoadConfig 获取配置参数数据
@@ -47,5 +49,6 @@ func LoadConfig() *Conf {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
+
 	return &APPConfig
 }

@@ -3,6 +3,7 @@ package routes
 import (
 	"douyin/douyin/controller"
 	"douyin/douyin/middleware"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
@@ -51,6 +52,7 @@ func InitRouter() *gin.Engine {
 			relationGroup.GET("/follow/list/", middleware.JwtMiddleware(), controller.FollowList)
 			relationGroup.GET("/follower/list/", middleware.JwtMiddleware(), controller.FollowerList)
 		}
+		r.StaticFS("/media/", http.Dir("media/"))
 	}
 
 	return r
