@@ -114,12 +114,11 @@ func publishToLocal0(data *multipart.FileHeader, video *model.Video, save func(*
 	userId := video.AuthorId
 	finalName := fmt.Sprintf("%d_%s", userId, fileName)
 	saveFile := filepath.Join(videoRoot, finalName)
-
 	err = save(data, saveFile)
 	if err != nil {
 		return err
 	}
-	playUrl := filepath.Join(MediaURI+videoRoot, finalName)
+	playUrl := MediaURI + filepath.ToSlash(filepath.Join(videoRoot, finalName))
 	log.Printf("Saved video (%s:%s) to %s, accessiable at %s", video.Title, data.Filename, saveFile, playUrl)
 
 	if err != nil {
@@ -137,7 +136,7 @@ func publishToLocal0(data *multipart.FileHeader, video *model.Video, save func(*
 	if err != nil {
 		return err
 	}
-	coverUrl := filepath.Join(MediaURI+imageRoot, coverName)
+	coverUrl := MediaURI + filepath.ToSlash(filepath.Join(imageRoot, coverName))
 	log.Printf("Extracted cover for video (%s:%s) to %s, accessiable at %s", video.Title, data.Filename, saveImage, coverUrl)
 
 	// 保存完成后记录下播放地址和封面地址
