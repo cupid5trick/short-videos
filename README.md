@@ -1,35 +1,9 @@
-# douyin-main
+# short-videos
 
-原项目：Henrik-Yao/douyin
+青训营极简抖音服务端。主要实现了短视频基础功能和互动方向的点赞评论关注等功能，未实现社交方向的消息（私信）功能。
 
-## 连接数据库
+线上地址：60.204.184.250:8000
 
-与主程序的同级目录，创建配置文件 `conf/application.yaml`：
+代码地址：https://github.com/cupid5trick/short-videos
 
-```yaml
-url: IP
-port: PORT
-username: ...
-password: ...
-database: ...
-```
-
-配置文件在服务器的 `/usr/local/douyin/conf` 目录，需要在 `/usr/local/douyin` 路径下启动程序。
-
-## 投稿
-
-目前的投稿功能是把视频存在本地，设置的一个媒体文件路径下。
-
-即：服务端程序同级路径下的 `media/{video,img}`
-
-# douyin
-
-字节跳动青训营抖音项目后端接口
-
-
-架构图如下：
-
-![](resources/后端架构图.jpeg)
-
-汇报文档地址：https://qnac8r4ct8.feishu.cn/docx/doxcnuqAvswArqpJqe3gPJJCYeh?from=from_copylink
-
+汇报文档地址：https://sm5n3kl9p2.feishu.cn/docx/QZsbdtLB5oMc34xWkC1cuzYRnVe
